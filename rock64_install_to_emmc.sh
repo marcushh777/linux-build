@@ -16,9 +16,12 @@ usage() {
     echo "$ $0 <system> [version]"
     echo ""
     echo "Systems:"
-    echo " - xenial-minimal (https://github.com/ayufan-rock64/linux-build/releases)"
-    echo " - xenial-mate (https://github.com/ayufan-rock64/linux-build/releases)"
+    echo " - jessie-minimal (https://github.com/ayufan-rock64/linux-build/releases)"
+    echo " - jessie-openmediavault (https://github.com/ayufan-rock64/linux-build/releases)"
+    echo " - stretch-minimal (https://github.com/ayufan-rock64/linux-build/releases)"
     echo " - xenial-i3 (https://github.com/ayufan-rock64/linux-build/releases)"
+    echo " - xenial-mate (https://github.com/ayufan-rock64/linux-build/releases)"
+    echo " - xenial-minimal (https://github.com/ayufan-rock64/linux-build/releases)"
     echo ""
     echo "Version:"
     echo " - latest will be used if version is not defined"
@@ -29,21 +32,28 @@ if [[ $# -ne 1 ]] && [[ $# -ne 2 ]]; then
     usage
 fi
 
-if [[ ! -d /sys/devices/soc.0/1c10000.sdmmc/mmc_host/mmc1 ]]; then
-    echo "You should boot from SD card"
-    exit 1
-fi
+case $(findmnt / -n -o SOURCE) in
+        /dev/mmcblk0p7)
+                DISK=/dev/mmcblk0
+                NAME=emmc
+                ;;
 
-if [[ ! -e /dev/mmcblk1 ]]; then
-    echo "You should boot from SD card"
-    exit 1
-fi
+        /dev/mmcblk1p7)
+                DISK=/dev/mmcblk1
+                NAME=sd
+                ;;
+
+       *)
+                echo "Unknown disk for /"
+                exit 1
+                ;;
+esac
 
 case "$1" in
-    xenial-minimal|xenial-mate|xenial-i3)
+    jessie-minimal|jessie-openmediavault|stretch-minimal|xenial-i3|xenial-mate|xenial-minimal)
         REPO="ayufan-rock64/linux-build"
         PREFIX="$1-rock64-"
-        SUFFIX="-[0-9]*-arm64.img.xz"
+        SUFFIX="-[0-9]*-arm*.img.xz"
         ARCHIVER="xz -d"
         ;;
 
@@ -95,11 +105,11 @@ done
 echo ""
 echo "Using $DOWNLOAD_URL..."
 echo "Umounting..."
-umount -f /dev/mmcblk1* || true
+umount -f /dev/mmcblk0* || true
 echo ""
 
-echo "Downloading and writing to /dev/mmcblk1..."
-curl -L -f "$DOWNLOAD_URL" | $ARCHIVER | dd bs=30M of=/dev/mmcblk1
+echo "Downloading and writing to /dev/mmcblk0..."
+curl -L -f "$DOWNLOAD_URL" | $ARCHIVER | dd bs=30M of=/dev/mmcblk0
 sync
 echo ""
 
